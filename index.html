@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Relay — AI meeting action router</title>
+<meta name="description" content="Relay turns meeting transcripts into owned, routed action items in Notion, Jira, and Trello.">
+<meta name="theme-color" content="#143b2b">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23143b2b'/%3E%3Cpath d='M7 16h6.2c3.1 0 5.8-2.3 5.8-5.5V8M7 16h6.2c3.1 0 5.8 2.3 5.8 5.5V24' stroke='%23d7f77d' stroke-width='2.1' stroke-linecap='round' fill='none'/%3E%3Ccircle cx='7' cy='16' r='2.7' fill='%23d7f77d'/%3E%3Ccircle cx='19' cy='6.8' r='2.7' fill='%23d7f77d'/%3E%3Ccircle cx='19' cy='25.2' r='2.7' fill='%23d7f77d'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<noscript><div style="padding:24px;font:16px sans-serif;background:#fff3cd;color:#3d2f00">Relay needs JavaScript enabled to run the interactive demo.</div></noscript>
+
+<svg class="sprite" aria-hidden="true">
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="16" rx="3"/><path d="M8 3v4M16 3v4M3.5 10h17"/></symbol>
+  <symbol id="i-check-square" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="m8 12 2.6 2.6L16.5 9"/></symbol>
+  <symbol id="i-plug" viewBox="0 0 24 24"><path d="M9 7V3.5M15 7V3.5M7 7h10v4a5 5 0 0 1-10 0V7ZM12 16v4.5"/></symbol>
+  <symbol id="i-route" viewBox="0 0 24 24"><circle cx="5.5" cy="18" r="2.5"/><circle cx="18.5" cy="5.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/><path d="M8 18h3a4 4 0 0 0 4-4V8M13 8l2.5-2.5M13 8l2.5 2.5M15 18h1"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M4 12h15M14 7l5 5-5 5"/></symbol>
+  <symbol id="i-arrow-up-right" viewBox="0 0 24 24"><path d="M7 17 17 7M8 7h9v9"/></symbol>
+  <symbol id="i-arrow-up" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7"/></symbol>
+  <symbol id="i-sparkles" viewBox="0 0 24 24"><path d="m12 3 1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7L12 3ZM18.5 15.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8.8-2.2ZM5 16l.6 1.4L7 18l-1.4.6L5 20l-.6-1.4L3 18l1.4-.6L5 16Z"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4M7.5 8.5 12 4l4.5 4.5M4 15v3.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V15"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M9 21h6"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M13 3H6.5A1.5 1.5 0 0 0 5 4.5v15A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V9l-6-6Z"/><path d="M13 3v6h6M8.5 13h7M8.5 16.5h5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+  <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.2" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8.5" y="8.5" width="12" height="12" rx="2"/><path d="M15.5 8.5v-3a2 2 0 0 0-2-2h-8a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h3"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 4.2 2.7 18a2 2 0 0 0 1.8 3h15a2 2 0 0 0 1.8-3L13.7 4.2a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4.5M12 17h.01"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3.5 3.5 0 0 1 0 7M17 14.5a5 5 0 0 1 4 5.5"/></symbol>
+  <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M4 13h4l1.5 2h5L16 13h4M5.5 4h13l2 9v5a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2v-5l2-9Z"/></symbol>
+  <symbol id="i-zap" viewBox="0 0 24 24"><path d="M13 2 4.5 13.5H11L10 22l8.5-11.5H12L13 2Z"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4.5" y="10" width="15" height="10.5" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v2.5"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="m9 6 9 6-9 6V6Z"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1A1.7 1.7 0 0 0 9 4.6 1.7 1.7 0 0 0 10 3V2.8h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"/></symbol>
+</svg>
+
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand-row">
+      <div class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 32 32" fill="none">
+          <path d="M7 16h6.2c3.1 0 5.8-2.3 5.8-5.5V8" stroke="#d7f77d" stroke-width="2.1" stroke-linecap="round"/>
+          <path d="M7 16h6.2c3.1 0 5.8 2.3 5.8 5.5V24" stroke="#d7f77d" stroke-width="2.1" stroke-linecap="round"/>
+          <circle cx="7" cy="16" r="2.7" fill="#d7f77d"/>
+          <circle cx="19" cy="6.8" r="2.7" fill="#d7f77d"/>
+          <circle cx="19" cy="25.2" r="2.7" fill="#d7f77d"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-name">relay</div>
+        <div class="brand-tag">MEETING OPS</div>
+      </div>
+    </div>
+
+    <button class="workspace-switch" data-toast-workspace>
+      <span class="ws-avatar">N</span>
+      <span class="ws-copy"><b>Northwind</b><small>Team workspace</small></span>
+      <svg class="i"><use href="#i-chevron-down"/></svg>
+    </button>
+
+    <nav class="nav" aria-label="Main">
+      <div class="nav-group">
+        <p class="nav-label">Workspace</p>
+        <button class="nav-item active" data-page="overview"><svg class="i"><use href="#i-grid"/></svg><span>Overview</span></button>
+        <button class="nav-item" data-page="meetings"><svg class="i"><use href="#i-calendar"/></svg><span>Meetings</span><span class="nav-badge" id="navMeetingBadge">2</span></button>
+        <button class="nav-item" data-page="actions"><svg class="i"><use href="#i-check-square"/></svg><span>Action items</span><span class="nav-badge" id="navActionBadge">8</span></button>
+      </div>
+      <div class="nav-group">
+        <p class="nav-label">Configure</p>
+        <button class="nav-item" data-page="integrations"><svg class="i"><use href="#i-plug"/></svg><span>Integrations</span></button>
+        <button class="nav-item" data-page="integrations" data-scroll="rules"><svg class="i"><use href="#i-route"/></svg><span>Routing rules</span></button>
+      </div>
+    </nav>
+
+    <div class="sidebar-spacer"></div>
+
+    <div class="route-status">
+      <div class="rs-top"><span class="pulse-dot"></span> Auto-route is on</div>
+      <p>New action items are matched to owners and tools automatically.</p>
+      <div class="rs-meter"><span style="width:92%"></span></div>
+      <div class="rs-meta"><span>92% match rate</span><span>Last 7 days</span></div>
+    </div>
+
+    <button class="profile" data-toast-profile>
+      <span class="avatar av-maya" style="width:31px;height:31px">MC</span>
+      <span class="profile-copy"><b>Maya Chen</b><small>maya@northwind.co</small></span>
+      <svg class="i"><use href="#i-more"/></svg>
+    </button>
+  </aside>
+
+  <div class="sidebar-scrim" id="navScrim"></div>
+
+  <main class="main">
+    <header class="topbar">
+      <button class="mobile-menu" id="menuBtn" aria-label="Open navigation"><svg class="i"><use href="#i-menu"/></svg></button>
+      <div class="crumb"><span class="ws">Northwind</span><span class="sep">/</span><b id="crumbPage">Overview</b></div>
+      <div class="topbar-actions">
+        <button class="search-trigger" id="searchBtn" aria-label="Search">
+          <svg class="i"><use href="#i-search"/></svg><span>Search</span><kbd>⌘K</kbd>
+        </button>
+        <button class="icon-btn" data-toast-notifications aria-label="Notifications">
+          <svg class="i"><use href="#i-bell"/></svg><span class="notif-dot"></span>
+        </button>
+        <div class="topbar-sep"></div>
+        <button class="top-avatar" data-toast-profile aria-label="Open profile">MC</button>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <section class="page active" id="page-overview" data-page-panel="overview">
+        <div class="page-head">
+          <div>
+            <p class="eyebrow" id="todayLine">TUESDAY, OCTOBER 27</p>
+            <h1><span id="greeting">Good morning</span>, Maya<span class="accent-dot">.</span></h1>
+            <p class="lede">Meetings did the talking. Here's the work that needs a nudge.</p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-soft" data-import><svg class="i"><use href="#i-upload"/></svg> Import transcript</button>
+            <button class="btn btn-primary" data-new><svg class="i"><use href="#i-plus"/></svg> New meeting</button>
+          </div>
+        </div>
+
+        <div class="stat-grid">
+          <article class="stat card">
+            <div class="stat-top">
+              <span class="stat-ico lime"><svg class="i"><use href="#i-clock"/></svg></span>
+              <span class="delta up">↑ 18%</span>
+            </div>
+            <div class="stat-num"><span id="statHours">7.4</span><small>h</small></div>
+            <div class="stat-label">Time reclaimed this week</div>
+            <div class="spark" aria-hidden="true"><i style="height:38%"></i><i style="height:54%"></i><i style="height:46%"></i><i style="height:72%"></i><i style="height:63%"></i><i style="height:88%"></i><i style="height:100%"></i></div>
+          </article>
+          <article class="stat card">
+            <div class="stat-top">
+              <span class="stat-ico"><svg class="i"><use href="#i-route"/></svg></span>
+              <span class="delta up">+12 this week</span>
+            </div>
+            <div class="stat-num"><span id="statRouted">38</span></div>
+            <div class="stat-label">Tasks routed this month</div>
+            <div class="spark" aria-hidden="true"><i style="height:20%"></i><i style="height:33%"></i><i style="height:52%"></i><i style="height:46%"></i><i style="height:69%"></i><i style="height:81%"></i><i style="height:92%"></i></div>
+          </article>
+          <article class="stat card">
+            <div class="stat-top">
+              <span class="stat-ico blue"><svg class="i"><use href="#i-zap"/></svg></span>
+              <span class="delta up">↓ 36% faster</span>
+            </div>
+            <div class="stat-num"><span>42</span><small>s</small></div>
+            <div class="stat-label">Average triage time</div>
+            <div class="spark" aria-hidden="true"><i style="height:88%"></i><i style="height:75%"></i><i style="height:62%"></i><i style="height:58%"></i><i style="height:43%"></i><i style="height:31%"></i><i style="height:24%"></i></div>
+          </article>
+          <article class="stat card">
+            <div class="stat-top">
+              <span class="stat-ico coral"><svg class="i"><use href="#i-inbox"/></svg></span>
+              <span class="delta neutral" id="statReviewMeta">2 meetings</span>
+            </div>
+            <div class="stat-num"><span id="statReview">2</span></div>
+            <div class="stat-label">Waiting for your review</div>
+          </article>
+        </div>
+
+        <div class="dash-grid">
+          <div class="dash-main">
+            <div id="reviewSlot"></div>
+
+            <section class="card recent-card">
+              <div class="card-head">
+                <div>
+                  <h3>Recent meetings</h3>
+                  <p class="sub">Every conversation, already sorted.</p>
+                </div>
+                <button class="link-btn" data-page="meetings">View all <svg class="i"><use href="#i-arrow-right"/></svg></button>
+              </div>
+              <div class="table-wrap">
+                <table class="meetings">
+                  <thead><tr><th>Meeting</th><th>When</th><th>Items</th><th>Status</th><th>Routed to</th></tr></thead>
+                  <tbody id="recentBody"></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+
+          <aside class="dash-side">
+            <section class="card next-card">
+              <div class="next-top">
+                <span class="eyebrow" style="margin:0">Up next</span>
+                <span class="live-pill"><i></i> in 2h 14m</span>
+              </div>
+              <div class="next-body">
+                <div>
+                  <h3>Design critique — Onboarding v2</h3>
+                  <p class="next-sub"><svg class="i"><use href="#i-clock"/></svg> 2:00 – 2:45 PM · Google Meet</p>
+                </div>
+                <div class="date-tile"><span id="dateMonth">OCT</span><b id="dateDay">27</b></div>
+              </div>
+              <div class="next-foot">
+                <div class="avatar-stack">
+                  <span class="avatar sm av-maya">MC</span><span class="avatar sm av-priya">PS</span><span class="avatar sm av-daniel">DK</span><span class="more">+2</span>
+                </div>
+                <button class="btn btn-soft" data-toast-join>Join with Meet <svg class="i"><use href="#i-arrow-up-right"/></svg></button>
+              </div>
+            </section>
+
+            <section class="card activity-card">
+              <div class="card-head">
+                <div><h3>Routing activity</h3><p class="sub">The last handoffs, at a glance.</p></div>
+                <button class="icon-btn" style="width:28px;height:28px" data-toast-activity aria-label="Activity options"><svg class="i"><use href="#i-more"/></svg></button>
+              </div>
+              <ul class="activity-list" id="activityList"></ul>
+            </section>
+
+            <section class="card connected-card">
+              <div class="card-head" style="padding-bottom:0">
+                <div><h3>Connected tools</h3><p class="sub" id="connectedCount">3 of 3 routing</p></div>
+                <button class="link-btn" data-page="integrations">Manage <svg class="i"><use href="#i-arrow-right"/></svg></button>
+              </div>
+              <div class="tool-list" id="toolsList"></div>
+              <div class="connected-foot"><button class="text-btn" data-import><svg class="i"><use href="#i-plus"/></svg> Add a source</button></div>
+            </section>
+          </aside>
+        </div>
+      </section>
+
+      <section class="page" id="page-meetings" data-page-panel="meetings">
+        <div class="page-head">
+          <div>
+            <p class="eyebrow">Meeting inbox</p>
+            <h1>Meetings<span class="accent-dot">.</span></h1>
+            <p class="lede">Every call transcribed, summarized, and turned into next steps.</p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-soft" data-import="upload"><svg class="i"><use href="#i-upload"/></svg> Upload recording</button>
+            <button class="btn btn-primary" data-new><svg class="i"><use href="#i-plus"/></svg> New meeting</button>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <div class="segmented" id="meetingFilters">
+            <button class="active" data-meeting-filter="all">All <span class="n" id="mCountAll">5</span></button>
+            <button data-meeting-filter="review">Needs review <span class="n" id="mCountReview">2</span></button>
+            <button data-meeting-filter="routed">Routed <span class="n" id="mCountRouted">3</span></button>
+          </div>
+          <button class="btn btn-soft btn-sm" data-toast-filter><svg class="i"><use href="#i-settings"/></svg> Filter by source</button>
+        </div>
+
+        <section class="card list-card">
+          <div class="meeting-table-head">
+            <span>Source</span><span>Meeting</span><span>When</span><span>Items</span><span>Status</span><span></span>
+          </div>
+          <div id="meetingsList"></div>
+        </section>
+      </section>
+
+      <section class="page" id="page-actions" data-page-panel="actions">
+        <div class="page-head">
+          <div>
+            <p class="eyebrow">The work behind the words</p>
+            <h1>Action items<span class="accent-dot">.</span></h1>
+            <p class="lede">One list for every commitment — owned, dated, and headed somewhere.</p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary" data-new><svg class="i"><use href="#i-plus"/></svg> New meeting</button>
+          </div>
+        </div>
+
+        <div class="mini-kpis">
+          <div class="mini-kpi"><b id="kpiAwaiting">8</b> awaiting route</div>
+          <div class="mini-kpi"><span class="dot"></span><b id="kpiRouted">7</b> routed</div>
+          <div class="mini-kpi"><span class="dot amber"></span><b id="kpiDone">0</b> done</div>
+          <div class="mini-kpi"><span class="dot coral"></span><b id="kpiOverdue">1</b> overdue</div>
+        </div>
+
+        <section class="card actions-card">
+          <div class="action-toolbar">
+            <label class="search-field">
+              <svg class="i"><use href="#i-search"/></svg>
+              <input id="actionSearch" type="search" placeholder="Search tasks, owners, meetings…">
+            </label>
+            <div class="select-wrap"><select id="ownerFilter" aria-label="Filter by owner"><option value="all">All owners</option></select></div>
+            <div class="select-wrap"><select id="toolFilter" aria-label="Filter by destination">
+              <option value="all">All destinations</option><option value="notion">Notion</option><option value="jira">Jira</option><option value="trello">Trello</option>
+            </select></div>
+            <div class="segmented" id="actionStatusFilters">
+              <button class="active" data-action-status="all">All</button>
+              <button data-action-status="review">Needs route</button>
+              <button data-action-status="routed">Routed</button>
+              <button data-action-status="done">Done</button>
+            </div>
+          </div>
+          <div class="action-list-head">
+            <span></span><span>Action item</span><span>Owner</span><span>Due</span><span>Destination</span><span>Status</span><span></span>
+          </div>
+          <div id="actionsList"></div>
+        </section>
+      </section>
+
+      <section class="page" id="page-integrations" data-page-panel="integrations">
+        <div class="page-head">
+          <div>
+            <p class="eyebrow">Configuration</p>
+            <h1>Integrations<span class="accent-dot">.</span></h1>
+            <p class="lede">Send the right work to the right place, without leaving the meeting.</p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-soft" data-toast-browse><svg class="i"><use href="#i-plus"/></svg> Browse integrations</button>
+          </div>
+        </div>
+
+        <div class="integration-summary" id="integrationSummary"><span class="pulse-dot"></span> All systems healthy · 100% delivery this week</div>
+        <div class="integration-grid" id="integrationGrid"></div>
+
+        <div class="settings-grid">
+          <section class="card rules-card" id="rules">
+            <div class="card-head">
+              <div><p class="eyebrow" style="margin:0 0 4px">Automation</p><h3>Routing rules</h3></div>
+              <button class="btn btn-soft btn-sm" data-add-rule><svg class="i"><use href="#i-plus"/></svg> Add rule</button>
+            </div>
+            <p class="card-sub">When Relay isn't sure, these rules catch the strays. Rules run in order.</p>
+            <div class="rule-list" id="ruleList"></div>
+          </section>
+
+          <section class="card webhook-card">
+            <div class="card-head">
+              <div><p class="eyebrow" style="margin:0 0 4px">Developers</p><h3>Webhook API</h3></div>
+              <span class="pill routed">Live</span>
+            </div>
+            <p class="card-sub">Send any transcript from your own stack. Relay returns structured, routed actions.</p>
+            <div class="endpoint">
+              <span class="method">POST</span><span>api.relay.app/v1/meetings/ingest</span>
+              <button data-copy-endpoint aria-label="Copy endpoint"><svg class="i"><use href="#i-copy"/></svg></button>
+            </div>
+            <pre class="code" id="payloadCode">{
+  <span class="k">"meeting"</span>: {
+    <span class="k">"title"</span>: <span class="s">"Q4 Launch — Weekly Sync"</span>,
+    <span class="k">"transcript"</span>: <span class="s">"Maya: I'll send the timeline…"</span>,
+    <span class="k">"route"</span>: [<span class="s">"notion"</span>, <span class="s">"jira"</span>]
+  }
+}</pre>
+            <div class="webhook-foot">
+              <span class="delivery"><svg class="i"><use href="#i-check"/></svg> <span id="lastDelivery">Last delivery: 200 OK · 2m ago</span></span>
+              <button class="text-btn" data-test-webhook>Send test event <svg class="i"><use href="#i-arrow-right"/></svg></button>
+            </div>
+          </section>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<div class="modal-backdrop" id="modal">
+  <div class="modal" id="modalCard" role="dialog" aria-modal="true" aria-label="Relay dialog">
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<div class="palette-backdrop" id="palette">
+  <div class="palette-card" role="dialog" aria-modal="true" aria-label="Search">
+    <div class="palette-search">
+      <svg class="i"><use href="#i-search"/></svg>
+      <input id="paletteInput" placeholder="Search meetings, actions, or jump to…" autocomplete="off">
+      <kbd>ESC</kbd>
+    </div>
+    <div class="palette-results" id="paletteResults"></div>
+    <div class="palette-foot">
+      <span class="kbd-group"><kbd>↑</kbd><kbd>↓</kbd></span><span>navigate</span>
+      <span><kbd>↵</kbd> open</span>
+      <span style="margin-left:auto">Relay command menu</span>
+    </div>
+  </div>
+</div>
+
+<div class="toast-stack" id="toasts" aria-live="polite"></div>
+
+<script src="app.js" defer></script>
+</body>
+</html>
