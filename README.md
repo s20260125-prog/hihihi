@@ -1,46 +1,72 @@
 # Relay — AI meeting action router
 
-![Relay overview](shot/final-overview.png)
+![Relay commercial site](assets/screen-overview.png)
 
-**Live demo:** https://s20260125-prog.github.io/hihihi/
+**Live site:** https://s20260125-prog.github.io/hihihi/  
+**Interactive app:** https://s20260125-prog.github.io/hihihi/app.html  
+**Authors:** 1E Tiffany, Trevor
 
-Relay turns a meeting recording or transcript into **owned, dated, routed action items**. It is the product surface for the pipeline in the brief: transcribe → extract structured actions → review → push to Notion, Jira, or Trello.
+Relay turns a meeting recording or transcript into **owned, dated, routed action items**: transcribe → extract structured actions → review → push to Notion, Jira, or Trello.
 
-The demo is a self-contained static app. It runs in the browser with no build step.
+This repository now contains two connected surfaces:
 
-## Run it
+1. **A bilingual commercial website** (`index.html`) with Traditional Chinese and English content, product story, workflow, live screenshots, integrations, pricing, FAQ, and author credits.
+2. **The original interactive product demo** (`app.html`) preserved as a fully working application. The marketing site links into it, and the demo links back to the site.
 
-Open `index.html` directly, or serve the folder:
+No API keys or build step are required for the demo.
+
+## Try it
+
+Open the live site, or run the folder locally:
 
 ```bash
 python3 -m http.server 8000
 # http://localhost:8000
 ```
 
-No API keys are required for the demo. GitHub Pages deploys automatically on every push or merge to `main` through the workflow in `.github/workflows/`.
+- **Language:** the site defaults to Traditional Chinese. Use the `繁中 / EN` switch to change the whole marketing site. The choice is stored in `localStorage` and reflected in the URL (`?lang=en`).
+- **Guided demo:** “Load sample” fills a Q4 launch transcript. Click **Extract action items**, review the five actions, then **Push tasks** to see the mock Notion/Jira/Trello handoff.
+- **Deep links:** `/app.html?demo=1` opens the guided sample, `/app.html?review=q4-launch` opens the review screen directly, and `/app.html#integrations` opens integration settings.
 
-## What is interactive
+The interactive app uses English sample data. The commercial site is fully bilingual.
 
-- **Overview** — meeting inbox, time saved, routing stats, next meeting, activity feed, connected tools.
-- **Review & route** — open the Q4 Launch meeting, edit titles/owners/dates/destinations, select or deselect items, add/remove actions, bulk-route, then push. A success receipt shows the mock Notion/Jira/Trello records created.
-- **New meeting** — paste a transcript or use the sample. Relay runs a staged extraction animation and returns editable action items with owners, due dates, priorities, destinations, and confidence scores.
-- **Extraction heuristics** — the browser demo parses speaker labels, commitments (`I'll`, `can you`, `please`, `we need to`), due phrases (`by Friday`, `tomorrow`, `next Tuesday`, `end of day`), urgency cues, and likely destinations. This is a deterministic stand-in for the production LLM step.
-- **Meetings** — filter by review/routed status, open a meeting summary and its actions.
-- **Action items** — search, filter by owner/destination/status, mark done, open the source meeting.
-- **Integrations** — connect/disconnect tools, configure default workspace/database/project/board, toggle routing rules, copy the webhook endpoint, send a test event.
-- **Command menu** — `⌘K` / `Ctrl+K` to search meetings and actions or jump between pages.
-- **Responsive** — mobile navigation, stacked cards, touch-sized controls, bottom-sheet modals.
+## What was improved
 
-Data is in-memory, so refreshing resets the demo. Audio upload is a UI simulation in the static build: it runs the sample transcript through extraction rather than calling Whisper. Real transcription, LLM extraction, and tool writes live on the server side described below.
+- The marketing site explains the product in depth: problem, four-step workflow, product screens, feature set, real sample meeting, routing rules, integrations, security posture, pricing, FAQ, and team.
+- The original app was moved to `app.html` and kept working, with a clear “back to site” route in the app top bar and sidebar logo.
+- The import flow now explains itself: a guided three-step header, a prominent sample-meeting callout, a “sample loaded” next-step message, and honest demo-mode notes for audio upload.
+- Added deep links for the guided demo and sample review so the marketing CTAs land in the most useful place.
+- Added bilingual metadata, `hreflang` alternates, responsive navigation, keyboard-accessible FAQ, and automatic GitHub Pages deployment.
 
 ## Files
 
 | File | Purpose |
 | --- | --- |
-| `index.html` | App shell, pages, inline SVG icon sprite |
-| `styles.css` | Design system and responsive layout |
+| `index.html` | Bilingual commercial website |
+| `site.css` | Commercial-site design system and responsive layout |
+| `site.js` | Language switch, mobile navigation, product tabs, reveal animations |
+| `app.html` | Interactive Relay product demo |
+| `styles.css` | App design system and responsive layout |
 | `app.js` | Seed data, extraction demo, review/routing flow, modals |
-| `.github/workflows/deploy-pages.yml` | Automatic GitHub Pages deployment on every push to `main` |
+| `assets/` | Product screenshots used by the site and README |
+| `.github/workflows/deploy-pages.yml` | Deploy to GitHub Pages on every push/merge to `main` |
+
+## Product demo features
+
+- **Overview** — meeting inbox, time saved, routing stats, upcoming meeting, activity feed, connected tools.
+- **Review & route** — edit titles/owners/dates/destinations, add/remove actions, bulk-route, and push. A success receipt shows the mock records created.
+- **New meeting** — paste a transcript or load the sample. Relay runs staged extraction and returns editable actions with owners, due dates, priorities, destinations, and confidence scores.
+- **Extraction heuristics** — speaker labels, commitments (`I'll`, `can you`, `please`, `we need to`), relative dates (`by Friday`, `next Tuesday`, `end of day`), urgency cues, and likely destinations. This is a deterministic stand-in for the production LLM step.
+- **Meetings / Action items** — filter by status, search, mark done, and open the source meeting.
+- **Integrations** — connect/disconnect tools, configure destinations, toggle routing rules, copy the webhook endpoint, and send a test event.
+- **Command menu** — `⌘K` / `Ctrl+K` to search meetings and actions.
+- **Responsive** — mobile navigation, stacked cards, touch-sized controls, and bottom-sheet modals.
+
+Data is in-memory, so refreshing resets the demo. Audio upload is a UI simulation in the static build: it runs the sample transcript through extraction rather than calling Whisper. Real transcription, LLM extraction, and tool writes live on the server side described below.
+
+## Deployment
+
+GitHub Pages is configured to build with GitHub Actions. The workflow in `.github/workflows/deploy-pages.yml` runs on every push to `main` (including PR merges) and on manual dispatch. It publishes `index.html`, `app.html`, `site.css`, `site.js`, `styles.css`, `app.js`, and `assets/`.
 
 ## Production architecture
 
