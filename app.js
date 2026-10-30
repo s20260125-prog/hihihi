@@ -564,17 +564,30 @@ Maya Chen: Perfect. Launch date stays Nov 4. Paid social can slip to Oct 31. Pri
       <div class="modal-shell import-shell">
         ${modalCloseButton()}
         <header class="import-head">
-          <p class="eyebrow">New meeting</p>
-          <h2>Bring in a meeting.</h2>
-          <p>Drop a Zoom, Meet, or Fireflies recording, or paste a transcript. Relay extracts the decisions, owners, and next steps — no note-taking.</p>
+          <div class="import-head-top">
+            <p class="eyebrow">New meeting</p>
+            <span class="demo-badge">Guided demo</span>
+          </div>
+          <h2>Turn a meeting into tasks.</h2>
+          <p>Paste a transcript or upload a recording. Relay extracts the decisions, owners, and next steps — you review everything before it is routed.</p>
         </header>
+        <div class="import-steps" aria-label="How it works">
+          <span class="import-step active"><b>01</b> Add content</span>
+          <span class="import-step"><b>02</b> Review actions</span>
+          <span class="import-step"><b>03</b> Route to tools</span>
+        </div>
+        <div class="sample-callout">
+          <span class="sample-callout-icon">${icon("sparkles")}</span>
+          <div class="sample-callout-copy"><b>First time? Start with the sample meeting.</b><span>Load a Q4 launch transcript and try extraction + routing in under a minute.</span></div>
+          <button class="btn btn-primary" id="sampleBtn">${icon("play")} Load sample</button>
+        </div>
         <div class="source-tabs" role="tablist">
           <button class="source-tab ${tab === "paste" ? "active" : ""}" data-source-tab="paste">${icon("file")} Paste transcript</button>
           <button class="source-tab ${tab === "upload" ? "active" : ""}" data-source-tab="upload">${icon("upload")} Upload audio</button>
         </div>
         <div class="source-panel ${tab === "paste" ? "" : "hidden"}" data-panel="paste">
           <div class="transcript-wrap">
-            <div class="transcript-head"><span>Transcript</span><button class="text-btn" id="sampleBtn">${icon("sparkles")} Use sample transcript</button></div>
+            <div class="transcript-head"><span>Transcript</span><span class="transcript-hint">Speaker labels welcome</span></div>
             <textarea id="transcriptInput" placeholder="Paste your meeting transcript here. Speaker labels help Relay assign owners — e.g. &quot;Priya: I'll send the brief by Friday.&quot;"></textarea>
             <div class="transcript-foot"><span id="charCount">0 characters</span><span>We never train on your data.</span></div>
           </div>
@@ -588,6 +601,7 @@ Maya Chen: Perfect. Launch date stays Nov 4. Paid social can slip to Oct 31. Pri
             <em id="fileName">Whisper transcription with speaker labels.</em>
           </label>
           <div class="upload-hint">${icon("zap")} Powered by Whisper. Speaker diarization included.</div>
+          <div class="upload-demo-note">${icon("alert")} This static demo uses the sample transcript after the transcription animation. Your file never leaves this browser.</div>
         </div>
         <div class="import-fields">
           <label class="field"><span>Meeting title</span><input id="meetingTitle" placeholder="e.g. Q4 Launch — Weekly Sync" maxlength="80"></label>
@@ -596,7 +610,7 @@ Maya Chen: Perfect. Launch date stays Nov 4. Paid social can slip to Oct 31. Pri
         <div class="import-error" id="importError"></div>
         <footer class="modal-foot">
           <span class="privacy">${icon("lock")} Local demo · transcript stays in your browser</span>
-          <div class="foot-actions"><button class="btn btn-ghost" data-close>Cancel</button><button class="btn btn-primary" id="analyzeBtn">${icon("sparkles")} Extract actions</button></div>
+          <div class="foot-actions"><button class="btn btn-ghost" data-close>Cancel</button><button class="btn btn-primary" id="analyzeBtn">${icon("sparkles")} Extract action items</button></div>
         </footer>
       </div>
     `, "import");
@@ -613,7 +627,15 @@ Maya Chen: Perfect. Launch date stays Nov 4. Paid social can slip to Oct 31. Pri
       $("#meetingTitle").value = "Q4 Launch — Weekly Sync";
       $("#meetingSource").value = "Google Meet";
       $("#importError").textContent = "";
+      const callout = $(".sample-callout-copy");
+      if (callout) {
+        callout.querySelector("b").textContent = "Sample loaded. Click Extract action items.";
+        callout.querySelector("span").textContent = "Edit the transcript if you like, then extract the actions.";
+      }
+      const sampleButton = $("#sampleBtn");
+      if (sampleButton) sampleButton.innerHTML = `${icon("check")} Reload sample`;
       transcript.focus();
+      transcript.scrollTop = 0;
     });
     $$(".source-tab").forEach(b => b.addEventListener("click", () => setSourceTab(b.dataset.sourceTab)));
     $("#audioInput").addEventListener("change", e => {
@@ -1401,6 +1423,14 @@ Maya Chen: Perfect. Launch date stays Nov 4. Paid social can slip to Oct 31. Pri
   else navigate("overview", { fromHash: true, instant: true });
 
   const params = new URLSearchParams(location.search);
-  if (params.get("review")) setTimeout(() => openReview(params.get("review")), 250);
-  if (params.get("import")) setTimeout(() => openImport(params.get("import") === "upload" ? "upload" : "paste"), 250);
+  if (params.get("review")) {
+    setTimeout(() => openReview(params.get("review")), 250);
+  } else if (params.get("demo")) {
+    setTimeout(() => {
+      openImport();
+      $("#sampleBtn")?.click();
+    }, 250);
+  } else if (params.get("import")) {
+    setTimeout(() => openImport(params.get("import") === "upload" ? "upload" : "paste"), 250);
+  }
 })();
